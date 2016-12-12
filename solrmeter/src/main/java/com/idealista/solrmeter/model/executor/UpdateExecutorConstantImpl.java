@@ -1,0 +1,230 @@
+/**
+ * Copyright Plugtree LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.idealista.solrmeter.model.executor;
+
+import java.util.LinkedList;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.response.UpdateResponse;
+
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
+import com.idealista.solrmeter.model.InputDocumentExtractor;
+import com.idealista.solrmeter.model.SolrClientFactory;
+import com.idealista.solrmeter.model.SolrMeterConfiguration;
+import com.idealista.solrmeter.model.UpdateExecutor;
+import com.idealista.solrmeter.model.UpdateStatistic;
+import com.idealista.solrmeter.model.exception.CommitException;
+import com.idealista.solrmeter.model.exception.UpdateException;
+import com.idealista.solrmeter.model.operation.CommitOperation;
+import com.idealista.solrmeter.model.operation.ConstantOperationExecutorThread;
+import com.idealista.solrmeter.model.operation.UpdateOperation;
+import com.idealista.stressTestScope.StressTestScope;
+/**
+ * Executor that executes updates in a constant period of time, determined
+ * by the specified number of updates per minute.
+ * @see com.idealista.solrmeter.model.operation.ConstantOperationExecutorThread
+ * @author tflobbe
+ *
+ */
+@StressTestScope
+public class UpdateExecutorConstantImpl implements UpdateExecutor {
+	
+	private static final Logger logger = Logger.getLogger(UpdateExecutorConstantImpl.class);
+
+	//TODO DI
+	private SolrClient client;
+	
+	private Integer numberOfDocumentsBeforeCommit;
+	
+	private Integer maxTimeBeforeCommit;
+	
+	private List<UpdateStatistic> statistics;
+	
+	protected boolean autocommit;
+	
+	private int notCommitedDocuments;
+	
+	private ConstantOperationExecutorThread commiterThread;
+	
+	private InputDocumentExtractor documentExtractor;
+	
+	private int operationsPerMinute;
+	
+	private boolean running;
+	
+	private ConstantOperationExecutorThread updateExecutorThread;
+	
+	@Inject
+	public UpdateExecutorConstantImpl(@Named("jsonUpdateExtractor") InputDocumentExtractor documentExtractor) {
+		this.documentExtractor = documentExtractor;
+		statistics = new LinkedList<>();
+		operationsPerMinute = Integer.valueOf(SolrMeterConfiguration.getProperty(SolrMeterConfiguration.UPDATES_PER_SECOND)).intValue();
+		autocommit = Boolean.valueOf(SolrMeterConfiguration.getProperty("solr.update.solrAutocommit", "false"));
+		maxTimeBeforeCommit = Integer.valueOf(SolrMeterConfiguration.getProperty("solr.update.timeToCommit", "10000"));
+		numberOfDocumentsBeforeCommit = Integer.valueOf(SolrMeterConfiguration.getProperty("solr.update.documentsToCommit", "100"));
+	}
+	
+	public synchronized SolrClient getSolrClient() {
+		if(client == null) {
+			client = SolrClientFactory.getSolrClientForUpdate();
+		}
+		
+		return client;
+	}
+	
+	private void prepareCommitter() {
+		if(commiterThread != null) {
+			commiterThread.destroy();
+		}
+		commiterThread = new ConstantOperationExecutorThread(new CommitOperation(this));
+		commiterThread.setTimeToWait(maxTimeBeforeCommit);
+	}
+	
+	public void start() {
+		if(this.isRunning()) {
+			return;
+		}
+		updateExecutorThread = new ConstantOperationExecutorThread(new UpdateOperation(this, documentExtractor));
+		onOperationsPerMinuteChange();
+		updateExecutorThread.start();
+		if(!isAutocommit()) {
+			prepareCommitter();
+			commiterThread.start();
+		}
+		logger.info("Update Executor started");
+	}
+	
+	public void stop() {
+		if(!this.isRunning()) {
+			return;
+		}
+		if(!isAutocommit()) {
+			commiterThread.destroy();
+		}
+		updateExecutorThread.destroy();
+		stopStatistics();
+	}
+
+	protected void stopStatistics() {
+		for(UpdateStatistic statistic:statistics) {
+			statistic.onFinishedTest();
+		}
+	}
+
+	public void notifyAddedDocument(UpdateResponse response) {
+		for(UpdateStatistic statistic:statistics) {
+			statistic.onAddedDocument(response);
+		}
+		if(!isAutocommit()) {
+			notCommitedDocuments++;//synchronize this?
+			if(notCommitedDocuments >= numberOfDocumentsBeforeCommit) {
+				logger.debug("Not Commited Docs is " + notCommitedDocuments + ". Waking commiter thread.");
+				commiterThread.wake();
+			}
+		}
+	}
+	
+	public void notifyCommitSuccessfull(UpdateResponse response) {
+		notCommitedDocuments = 0;
+		for(UpdateStatistic statistic:statistics) {
+			statistic.onCommit(response);
+		}
+	}
+	
+	public void notifyCommitError(CommitException exception) {
+		for(UpdateStatistic statistic:statistics) {
+			statistic.onCommitError(exception);
+		}
+	}
+	
+	public void notifyUpdateError(UpdateException updateException) {
+		for(UpdateStatistic statistic:statistics) {
+			statistic.onAddError(updateException);
+		}
+	}
+	
+	public void addStatistic(UpdateStatistic statistic) {
+		this.statistics.add(statistic);
+	}
+
+	public int getNotCommitedDocuments() {
+		return notCommitedDocuments;
+	}
+	
+	public Integer getNumberOfDocumentsBeforeCommit() {
+		return numberOfDocumentsBeforeCommit;
+	}
+	
+	public void setMaxTimeBeforeCommit(Integer value) {
+		if(value <= 0) {
+			throw new RuntimeException("Time before commit can't be 0");
+		}
+		maxTimeBeforeCommit = value;
+		SolrMeterConfiguration.setProperty("solr.update.timeToCommit", String.valueOf(maxTimeBeforeCommit));
+		if(commiterThread != null) {
+			commiterThread.setTimeToWait(value);
+		}
+	}
+
+	public Integer getMaxTimeBeforeCommit() {
+		return maxTimeBeforeCommit;
+	}
+
+	public boolean isAutocommit() {
+		return autocommit;
+	}
+
+	public Integer getUpdatesPerMinute() {
+		return this.operationsPerMinute;
+	}
+	
+	public boolean isRunning() {
+		return running;
+	}
+	
+	private void onOperationsPerMinuteChange() {
+		SolrMeterConfiguration.setProperty("solr.load.updatesperminute", String.valueOf(operationsPerMinute));
+		if(this.updateExecutorThread != null) {
+			this.updateExecutorThread.setTimeToWait(60000/operationsPerMinute);
+		}
+	}
+
+    @Override
+    public void setOperationsPerSecond(int value) {
+        if (operationsPerMinute < 1) {
+            throw new IllegalArgumentException("Invalid number of operations per second: " + value);
+        }
+        this.operationsPerMinute = value;
+        onOperationsPerMinuteChange();
+    }
+
+    @Override
+    public void setNumberOfDocumentsBeforeCommit(int value) {
+        if (value == Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Number of documents before commit can't be more than " + Integer.MAX_VALUE);
+        }
+        if (value < 0) {
+            throw new IllegalArgumentException("Number of documents before commit can't be less than 0");
+        }
+        numberOfDocumentsBeforeCommit= value;
+        SolrMeterConfiguration.setProperty("solr.update.documentsToCommit", String.valueOf(numberOfDocumentsBeforeCommit));
+    }
+
+	
+}

@@ -1,0 +1,16 @@
+{"id": "GB18030TEST","sku": "some","name": "SolrMeter Document 1", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "SP2514N","sku": "some","name": "SolrMeter Document 2", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 3", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 4", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 5", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 6", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 7", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 8", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 9", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 10", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 11", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 12", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 13", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 14", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 15", "manu": "Idealista S.A.", "cat": "Software"}
+{"id": "F8V7067-APL-KIT","sku": "some","name": "SolrMeter Document 16", "manu": "Idealista S.A.", "cat": "Software"}
