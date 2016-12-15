@@ -1,2 +1,4 @@
 language: java
 script: cd ./solrmeter-parent && mvn test
+jdk:
+  - oraclejdk8
