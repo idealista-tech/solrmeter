@@ -1,3 +1,5 @@
+![Travis CI Status - idealista solrmeter](https://api.travis-ci.org/idealista-tech/solrmeter.svg?branch=master)
+
 ![Logo](logo.gif)
 
 # What is SolrMeter?
