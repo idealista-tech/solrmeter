@@ -3,14 +3,14 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.idealista</groupId>
 	<artifactId>solrmeter</artifactId>
-	<version>0.4.0</version>
+	<version>0.4.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<name>SolrMeter</name>
 	<description>Standalone java tool for stress testing over Solr. </description>
 	<parent>
 		<groupId>com.idealista</groupId>
 		<artifactId>solrmeter-parent</artifactId>
-		<version>0.4.0</version>
+		<version>0.4.1-SNAPSHOT</version>
 		<relativePath>../solrmeter-parent/pom.xml</relativePath>
 	</parent>
 	<build>

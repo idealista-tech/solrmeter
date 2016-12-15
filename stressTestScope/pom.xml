@@ -9,7 +9,7 @@
 	<parent>
 		<groupId>com.idealista</groupId>
 		<artifactId>solrmeter-parent</artifactId>
-		<version>0.4.0</version>
+		<version>0.4.1-SNAPSHOT</version>
 		<relativePath>../solrmeter-parent/pom.xml</relativePath>
 	</parent>
 	<build>
